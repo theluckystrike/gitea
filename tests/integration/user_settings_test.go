@@ -219,6 +219,25 @@ func TestUserSettingsDelete(t *testing.T) {
 	})
 }
 
+func TestUserSettingsUpdateProfile(t *testing.T) {
+	defer tests.PrepareTestEnv(t)()
+	session := loginUser(t, "user2")
+
+	t.Run("change username disabled", func(t *testing.T) {
+		WithDisabledFeatures(t, setting.UserFeatureChangeUsername)
+		req := NewRequestWithValues(t, "POST", "/user/settings", map[string]string{"name": "user2-renamed"})
+		session.MakeRequest(t, req, http.StatusSeeOther)
+		assert.Equal(t, "Changing username is disabled.", session.GetCookieFlashMessage().ErrorMsg)
+	})
+
+	t.Run("change full name disabled", func(t *testing.T) {
+		WithDisabledFeatures(t, setting.UserFeatureChangeFullName)
+		req := NewRequestWithValues(t, "POST", "/user/settings", map[string]string{"full_name": "Renamed"})
+		session.MakeRequest(t, req, http.StatusSeeOther)
+		assert.Equal(t, "Changing full name is disabled.", session.GetCookieFlashMessage().ErrorMsg)
+	})
+}
+
 func TestUserSettingsAppearance(t *testing.T) {
 	defer tests.PrepareTestEnv(t)()
 

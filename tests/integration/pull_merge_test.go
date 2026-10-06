@@ -385,6 +385,20 @@ func TestCantMergeConflict(t *testing.T) {
 		err = pull_service.Merge(t.Context(), pr.ID, user1, repo_model.MergeStyleRebase, "", "CONFLICT", false)
 		assert.Error(t, err, "Merge should return an error due to conflict")
 		assert.True(t, pull_service.IsErrRebaseConflicts(err), "Merge error is not a conflict error")
+
+		// simulate a stale mergeable status so the web handler reaches the merge and reports the conflict
+		require.Eventually(t, func() bool {
+			pr = unittest.AssertExistsAndLoadBean(t, &issues_model.PullRequest{ID: pr.ID})
+			return pr.Status == issues_model.PullRequestStatusConflict
+		}, 5*time.Second, 50*time.Millisecond)
+		pr.Status = issues_model.PullRequestStatusMergeable
+		require.NoError(t, pr.UpdateCols(t.Context(), "status"))
+
+		req = NewRequestWithValues(t, "POST", fmt.Sprintf("/user1/repo1/pulls/%d/merge", pr.Index), map[string]string{
+			"do": string(repo_model.MergeStyleMerge),
+		})
+		session.MakeRequest(t, req, http.StatusOK)
+		assert.Contains(t, session.GetCookieFlashMessage().ErrorMsg, "Merge Failed: There was a conflict while merging.")
 	})
 }
 

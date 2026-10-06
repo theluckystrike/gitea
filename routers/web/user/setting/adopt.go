@@ -14,7 +14,6 @@ import (
 
 // AdoptOrDeleteRepository adopts or deletes a repository
 func AdoptOrDeleteRepository(ctx *context.Context) {
-	ctx.Data["Title"] = ctx.Tr("settings.adopt")
 	ctx.Data["PageIsSettingsRepos"] = true
 	allowAdopt := ctx.IsUserSiteAdmin() || setting.Repository.AllowAdoptionOfUnadoptedRepositories
 	ctx.Data["allowAdopt"] = allowAdopt
